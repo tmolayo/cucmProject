@@ -1,0 +1,10 @@
+{
+        'name': ,
+        'product': 'Cisco Unified Client Services Framework',
+        'class': 'Phone',
+        'protocol': 'SIP',
+        'protocolSide': 'User',
+        'devicePoolName': 'Default',
+        'sipProfileName':
+            'Standard SIP Profile',
+}

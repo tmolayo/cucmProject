@@ -44,6 +44,63 @@ def addUser(client,userId, firstName, lastName, devices):
                 'associatedDevices': dictDevices
             })
 
+def getPhone(client, name):
+    return (client.service.getPhone(name=name)['return']['phone'])
+
+def copyPhone(client, copiedPhoneName, newPhoneName):
+    copiedPhone = getPhone(client, copiedPhoneName)
+    client.service.addPhone(phone={
+        'name': '%s%s' % ('CSF', copyPhone),
+        'product': copiedPhone.product,
+        'class': 'Phone',
+        'protocol': 'SIP',
+        'protocolSide': 'User',
+        'devicePoolName': 'Default',
+        'sipProfileName':
+            'Standard SIP Profile',
+    })
+
+def addPhone(client):
+    client.service.addPhone(phone={
+        'name': '%s%s' % ('CSF', 'dean00005'),
+        'product': 'Cisco Unified Client Services Framework',
+        'class': 'Phone',
+        'protocol': 'SIP',
+        'protocolSide': 'User',
+        'devicePoolName': 'Default',
+        'sipProfileName':
+            'Standard SIP Profile',
+    })
+def addLine(id):
+    print('start adding line which name ' + id)
+    objectId =  client.service.addLine(line={
+        'pattern': id,
+        'description' : 'description' + id,
+        'alertingName' : 'alertingName' + id,
+        'routePartitionName': 'Global Learned E164 Patterns'})
+    print('end adding line which name ' + id)
+    return objectId
+
+def addPhoneWithLine(client, phoneName, lineId):
+    client.service.addPhone(phone={
+        'name': '%s%s' % ('CSF', phoneName),
+        'product': 'Cisco Unified Client Services Framework',
+        'class': 'Phone',
+        'protocol': 'SIP',
+        'protocolSide': 'User',
+        'devicePoolName': 'Default',
+        'sipProfileName': 'Standard SIP Profile',
+        'lines': {
+            'line': {
+                'index': 1,
+                'dirn': {
+                    '_uuid': lineId
+                },
+                'display': 'displayCheck',
+                'label': 'labelCheck'
+
+            }},
+    })
 
 #not Working!
 def isUserExist(client, userid):
@@ -64,8 +121,18 @@ cucmUsername = 'administrator'
 cucmPassword = 'ciscopsdt'
 WSDL = urljoin('file:', pathname2url(abspath('schema/AXLAPI.wsdl')))
 client = getAuthenticationWithServer(cucmIp, cucmUsername, cucmPassword, WSDL)
+shluha = '1000013'
+phoneName = 'dean0013'
+idLine = addLine(shluha)['return']
+print('add a phone')
+addPhoneWithLine(client, phoneName, idLine)
+
+#copyPhone(client, "CSFTemp", "CSFtest001")
+
+# addPhone(client)
+#print(getPhone(client,'CSFTemp'))
 #print (getUsers(client)['return']['user'])
-addUser(client, "1105", "gilad", "livne", ["CSFUSER001"])
+# addUser(client, "1105", "gilad", "livne", ["CSFUSER001"])
 #print (getUsers(client)['return']['user'])
 # print (getUsers(client)['return']['user'][0]['userid'])
 # print (isUserExist(client, "dean"))
