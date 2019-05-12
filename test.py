@@ -5,11 +5,11 @@ import ssl
 from suds.client import Client
 
 def getAuthenticationWithServer(ip, username, password,WSDL):
-    if hasattr(ssl, '_create_unverified_context'):
-        print("allow insecure connections")
-        ssl._create_default_https_context = ssl._create_unverified_context
-        return (Client(WSDL, location='https://%s:8443/axl/' % (ip),
-                username=username, password=password))
+    # if hasattr(ssl, '_create_unverified_context'):
+    #     print("allow insecure connections")
+    ssl._create_default_https_context = ssl._create_unverified_context
+    return (Client(WSDL, location='https://%s:8443/axl/' % (ip),
+                   username=username, password=password))
 
 def getUsers(client):
     response = client.service.listUser(
@@ -47,6 +47,7 @@ def addUser(client,userId, firstName, lastName, devices):
 def getPhone(client, name):
     return (client.service.getPhone(name=name)['return']['phone'])
 
+ # not working
 def copyPhone(client, copiedPhoneName, newPhoneName):
     copiedPhone = getPhone(client, copiedPhoneName)
     client.service.addPhone(phone={
