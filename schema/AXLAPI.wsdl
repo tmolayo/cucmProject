@@ -23625,7 +23625,7 @@
 	
 	<service name="AXLAPIService">
 		<port binding="s0:AXLAPIBinding" name="AXLPort">
-			<soap:address location="https://CCMSERVERNAME:8443/axl/"/>
+			<soap:address location="https://10.10.20.1:8443/axl/"/>
 		</port>
 	</service>
 </definitions>
