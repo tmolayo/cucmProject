@@ -12,6 +12,7 @@ from lxml import etree
 import ssl
 
 def getAuthenticationWithServer(username, password,wsdl):
+    disable_warnings(InsecureRequestWarning)
     session = Session()
     session.verify = False
     session.auth = HTTPBasicAuth(username, password)
@@ -20,61 +21,154 @@ def getAuthenticationWithServer(username, password,wsdl):
     ssl._create_default_https_context = ssl._create_unverified_context
     return (Client(wsdl=wsdl, transport=transport, plugins=[history]))
 
+def getUsers(client):
+    response = client.service.listUser(
+        searchCriteria={
+            'userid': '%'
+        },
+        returnedTags={
+            'userid': True,
+            'telephoneNumber': True,
+            'lastName': True
+        })
+    return (response)
 
-def show_history():
-    for item in [history.last_sent, history.last_received]:
-        print(etree.tostring(item["envelope"], encoding="unicode", pretty_print=True))
+def addUser(client,userId, firstName, lastName, devices):
+    if (devices == None or len(devices) == 0):
+        response = client.service.addUser(
+            user={
+                'firstName': firstName,
+                'lastName': lastName,
+                'userid': userId
+            })
+    else:
+        dictDevices = []
+        for device in devices:
+            dictDevices.append({'device': device})
+        print(dictDevices)
+        response = client.service.addUser(
+            user={
+                'firstName': firstName,
+                'lastName': lastName,
+                'userid': userId,
+                'associatedDevices': dictDevices
+            })
 
+def addPhone(client, name):
+    client.service.addPhone(phone={
+        'name': '%s%s' % ('CSF', name),
+        'product': 'Cisco Unified Client Services Framework',
+        'class': 'Phone',
+        'protocol': 'SIP',
+        'protocolSide': 'User',
+        'devicePoolName': 'Default',
+        'sipProfileName': 'Standard SIP Profile',
+        'commonPhoneConfigName': 'Standard Common Phone Profile',
+        'locationName': 'Hub_None'
+    })
+
+def addPhoneWithLine(client, phoneName, lineId):
+    # lineUuid = getLineUuid(lineId)
+    client.service.addPhone(phone={
+        'name': '%s%s' % ('CSF', phoneName),
+        'product': 'Cisco Unified Client Services Framework',
+        'class': 'Phone',
+        'protocol': 'SIP',
+        'protocolSide': 'User',
+        'devicePoolName': 'Default',
+        'sipProfileName': 'Standard SIP Profile',
+        'commonPhoneConfigName': 'Standard Common Phone Profile',
+        'locationName': 'Hub_None',
+        'lines': {
+            'line': {
+                'index': 1,
+                'dirn': {
+                    'pattern': lineId
+                },
+                'display': 'displayCheck',
+                'label': 'labelCheck'
+
+            }},
+    })
+
+# ToDo: handleing phone not found and the json is not in the right convention
+def getPhone(name):
+    return (client.service.getPhone(name=name)['return']['phone'])
+
+
+# Get the uuid of the phone by phone name, return None if the phone not found
+def getPhoneUuid(phoneName):
+    phoneJson = None
+    try:
+        phoneJson = client.service.getPhone(name=phoneName, returnedTags={'_uuid': True})
+    except WebFault as error:
+        if (error.fault.faultstring == 'Item not valid: The specified ' + phoneName +' was not found'):
+            return None
+        else:
+            raise (error)
+    return phoneJson['return']['phone']['_uuid']
+
+# Update the first line of the phone and erase the others
+def updatePhoneLine(phoneName, lineId):
+    client.service.updatePhone(name='%s%s' % ('CSF', phoneName), lines={
+        'line': {
+            'index': 1,
+            'dirn': {
+                'pattern': lineId
+            },
+            'display': 'displayCheck',
+            'label': 'labelCheck'
+        }})
+
+
+# Todo: handleing error on json we got
+# return the line uuid
+def addLine(id):
+    print('start adding line which name ' + id)
+    objectId =  client.service.addLine(line={
+        'pattern': id,
+        'usage':'',
+        'description' : 'description' + id,
+        'alertingName' : 'alertingName' + id,
+        'routePartitionName': 'Global Learned E164 Patterns'})
+    print('end adding line which name ' + id)
+    return objectId['return']
+
+# Get the uuid of the line by line id, return None if the line not found
 def getLineUuid(lineId):
     lineJson = None
     try:
-        lineJson = client.service.getLine(pattern=lineId, returnedTags={'_uuid': ''})
-    except Exception as error:
+        lineJson = client.service.getLine(pattern=lineId, returnedTags={'_uuid': True})
+    except WebFault as error:
         if (error.fault.faultstring == "Item not valid: The specified Line was not found"):
             return None
         else:
             raise (error)
     return lineJson['return']['line']['_uuid']
 
+def isLineExist(lindId):
+    return (getLineUuid(lindId) != None)
 
-disable_warnings(InsecureRequestWarning)
+# ToDo: function that get value from json and raise exception if the json not in the right convention
+def getFromJson(json, arrOfAttributes):
+    pass
+
+
 username = 'administrator'
 password = 'ciscopsdt'
 
 # If you're not disabling SSL verification, host should be the FQDN of the server rather than IP
 wsdl = 'file://schema/AXLAPI.wsdl'
 client = getAuthenticationWithServer(username, password, wsdl)
-print(client.service.updateUser(userid='dean', selfService='999999'))
-# binding = "file://schema/AXLSoap.xsd"
 
-# Create a custom session to disable Certificate verification.
-# In production you shouldn't do this,
-# but for testing it saves having to have the certificate in the trusted store.
-# session = Session()
-# session.verify = False
-# session.auth = HTTPBasicAuth(username, password)
-# transport = Transport(cache=SqliteCache(), session=session, timeout=20)
-# history = HistoryPlugin()
-# ssl._create_default_https_context = ssl._create_unverified_context
-# client = Client(wsdl=wsdl, transport=transport, plugins=[history])
-# print(client.service.getLine(pattern="1021"))
-# ssl._create_default_https_context = ssl._create_unverified_context
-# client = Client(wsdl=wsdl, transport=transport)
-# service = client.create_service(binding, location)
-
-# print(getLineUuid('1021'))
+# print(client.service.getLine(pattern='1021'))
+# addPhone(client, "PhoneTest002")
+# addLine('1022')
+# addLine('1023')
+# addPhoneWithLine(client, 'deanTest0005', '1021')
+# addLine('1024')
+# print(client.service.listLine(searchCriteria={'pattern':'%'}, returnedTags={'pattern':True}))
+updatePhoneLine("deanTest0005", '1024')
 
 
-
-
-
-
-
-
-# def dean(*a):
-#     print(a)
-#
-# b = ['a', 'b', 'c','d']
-#
-# dean(b)
-# dean(*b)
+# print(client.service.updateUser(userid='dean', selfService='999999'))
