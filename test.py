@@ -3,6 +3,11 @@ from urllib.parse import urljoin
 from urllib.request import pathname2url
 import ssl
 from suds.client import Client
+from suds import *
+
+# ToDo: function that get value from json and raise exception if the json not in the right convention
+def getFromJson(json, arrOfAttributes):
+    pass
 
 def getAuthenticationWithServer(ip, username, password,WSDL):
     # if hasattr(ssl, '_create_unverified_context'):
@@ -44,8 +49,51 @@ def addUser(client,userId, firstName, lastName, devices):
                 'associatedDevices': dictDevices
             })
 
-def getPhone(client, name):
+# ToDo: handleing phone not found and the json is not in the right convention
+def getPhone(name):
     return (client.service.getPhone(name=name)['return']['phone'])
+
+# Update the first line of the phone and erase the others
+def updatePhoneLine(phoneName, lineId):
+    lineUuid = getLineUuid(lineId)
+    if(lineUuid == None):
+        raise ValueError("The Line " + lineId + ' not exist')
+    client.service.updatePhone(name=phoneName, lines={
+        'line': {
+            'index': 1,
+            'dirn': {
+                '_uuid': lineUuid
+            },
+            'display': 'displayCheck',
+            'label': 'labelCheck'
+        }})
+
+# Get the uuid of the line by line id, return None if the line not found
+def getLineUuid(lineId):
+    lineJson = None
+    try:
+        lineJson = client.service.getLine(pattern=lineId, returnedTags={'_uuid': True})
+    except WebFault as error:
+        if (error.fault.faultstring == "Item not valid: The specified Line was not found"):
+            return None
+        else:
+            raise (error)
+    return lineJson['return']['line']['_uuid']
+
+# Get the uuid of the phone by phone name, return None if the phone not found
+def getPhoneUuid(phoneName):
+    phoneJson = None
+    try:
+        phoneJson = client.service.getPhone(name=phoneName, returnedTags={'_uuid': True})
+    except WebFault as error:
+        if (error.fault.faultstring == 'Item not valid: The specified ' + phoneName +' was not found'):
+            return None
+        else:
+            raise (error)
+    return phoneJson['return']['phone']['_uuid']
+
+def isLineExist(lindId):
+    return (getLineUuid(lindId) != None)
 
  # not working
 def copyPhone(client, copiedPhoneName, newPhoneName):
@@ -72,6 +120,9 @@ def addPhone(client):
         'sipProfileName':
             'Standard SIP Profile',
     })
+
+# Todo: handleing error on json we got
+# return the line uuid
 def addLine(id):
     print('start adding line which name ' + id)
     objectId =  client.service.addLine(line={
@@ -80,7 +131,7 @@ def addLine(id):
         'alertingName' : 'alertingName' + id,
         'routePartitionName': 'Global Learned E164 Patterns'})
     print('end adding line which name ' + id)
-    return objectId
+    return objectId['return']
 
 def addPhoneWithLine(client, phoneName, lineId):
     client.service.addPhone(phone={
@@ -124,9 +175,20 @@ WSDL = urljoin('file:', pathname2url(abspath('schema/AXLAPI.wsdl')))
 client = getAuthenticationWithServer(cucmIp, cucmUsername, cucmPassword, WSDL)
 shluha = '1000013'
 phoneName = 'dean0013'
-idLine = addLine(shluha)['return']
-print('add a phone')
-addPhoneWithLine(client, phoneName, idLine)
+print(getPhoneUuid('CSFUSER002222'))
+
+# print('is line 1021 exist => ' + (str)(isLineExist('1021')))
+# print('is line 1022 exist => ' + ((str)(isLineExist('1022'))))
+# try:
+#     getLineUuid('1022')
+# except WebFault as error:
+#     if (error.fault.faultstring == "Item not valid: The specified Line was not found"):
+#         print('okokokok')
+#     else:
+#         raise(error)
+# idLine = addLine(shluha)['return']
+# print('add a phone')
+# addPhoneWithLine(client, phoneName, idLine)
 
 #copyPhone(client, "CSFTemp", "CSFtest001")
 
