@@ -175,7 +175,8 @@ WSDL = urljoin('file:', pathname2url(abspath('schema/AXLAPI.wsdl')))
 client = getAuthenticationWithServer(cucmIp, cucmUsername, cucmPassword, WSDL)
 shluha = '1000013'
 phoneName = 'dean0013'
-print(getPhoneUuid('CSFUSER002222'))
+client.service.getLine(pattern="1021")
+# print(getPhoneUuid('CSFUSER002222'))
 
 # print('is line 1021 exist => ' + (str)(isLineExist('1021')))
 # print('is line 1022 exist => ' + ((str)(isLineExist('1022'))))
