@@ -42,9 +42,16 @@ def addUser(client,userId, firstName, lastName, devices):
                 'associatedDevices': dictDevices
             })
 
-def getUserInfo(userId, attributes=[]):
-    """ Get info about of the user by user id,
-      return None if the user not found, if more then 1 found raise exception"""
+def getUserInfo(userId):
+    """Get all the information of the user, raise exception if he did not found"""
+    if(not searchForUser(userId)):
+        raise RuntimeError('The user id not exist, the user id=> ' + userId)
+    else:
+        return client.service.getUser(userid=userId)['return']['user']
+
+def searchForUser(userId, attributes=['uuid']):
+    """ search for user, if he not found return None else
+        return by default his uuid or the inputs attributes"""
     returnedTagsForApi = {}
     for attr in attributes:
         returnedTagsForApi[attr] = ''
@@ -59,7 +66,7 @@ def getUserInfo(userId, attributes=[]):
 def getUserUuid(userId):
     """ Get uuid about of the user by user id,
          return None if the user not found, if more then 1 found raise exception"""
-    return getPhoneInfo(userId, attributes=['uuid'])['uuid']
+    return searchForUser(userId)['uuid']
 
 def addPhone(client, name):
     client.service.addPhone(phone={
@@ -101,12 +108,12 @@ def addPhoneWithLine(client, phoneName, lineId):
             }},
     })
 
-def getPhoneInfo(phoneName, attributes=[]):
-    """ Get info about of the phone by phone name,
-    return None if the phone not found, if more then 1 found raise exception"""
+def searchForPhone(phoneName, attributes=['uuid']):
+    """ search for user, if he not found return None else
+        return by default his uuid or the inputs attributes"""
     returnedTagsForApi = {}
     for attr in attributes:
-        returnedTagsForApi[attr] = ''
+        returnedTagsForApi[attr] = True
     phoneJson = client.service\
         .listPhone(searchCriteria={'name': '%s%s' % ('CSF', phoneName)}, returnedTags=returnedTagsForApi)
     if (not phoneJson['return'] or not phoneJson['return']['phone']):
@@ -118,7 +125,7 @@ def getPhoneInfo(phoneName, attributes=[]):
 def getPhoneUuid(phoneName):
     """ Get uuid about of the phone by phone name,
         return None if the phone not found, if more then 1 found raise exception"""
-    return getPhoneInfo(phoneName, attributes=['uuid'])['uuid']
+    return searchForPhone(phoneName)['uuid']
 
 def updatePhoneLine(phoneName, lineId):
     """update the line of a phone"""
@@ -145,42 +152,29 @@ def addLine(id):
         'alertingName' : 'alertingName' + id,
         'routePartitionName': 'Global Learned E164 Patterns'})['return']
 
-def getLineInfo(lineId, attributes=[]):
-    """ Get the uuid of the line by line id,
-    return None if the line not found, raise exception if more then one founded"""
+def searchForLine(lineId, attributes=['uuid']):
+    """ search for user, if he not found return None else
+        return by default his uuid or the inputs attributes"""
     returnedTagsForApi = {}
     for attr in attributes:
-        returnedTagsForApi[attr] = ''
+        returnedTagsForApi[attr] = True
     lineJson = client \
         .service.listLine(searchCriteria={'pattern': lineId}, returnedTags=returnedTagsForApi)
     if(not lineJson['return'] or not lineJson['return']['line'] ):
         return None
     if (len(lineJson['return']['line']) > 1):
-        raise RuntimeError('found more then one line with the same id, the id => ' + lineId)
+        raise ValueError('found more then one line with the same id, the id => ' + lineId)
     return lineJson['return']['line'][0]
 
 def getLineUuid(lineId):
-    return getLineInfo(lineId, attributes=['uuid'])['uuid']
+    return searchForLine(lineId)['uuid']
 
-# ToDo: function that get value from json and raise exception if the json not in the right convention
-def getFromJson(json, arrOfAttributes):
-    pass
+def updateUserSelfSerivce(userId, selfServiceUserID):
+    return client.service.updateUser(userid=userId, selfService=selfServiceUserID)
 
-
-def updateUserSelfSerivce(userID, selfServiceUserID):
-    try:
-        return client.service.updateUser(userid=userID, selfService=selfServiceUserID)
-    except Exception as error:
-        return error
-
-
-# TODO: Unable to associate more that one device
-def associateDevice(userID, device):
-    try:
-        return client.service.updateuser(userid=userID, associatedDevices=device)
-    except Exception as error:
-        return error
-
+def addAssociateDeviceToUser(userId, device):
+    userDevices = [device] + getUserInfo(userId)['associatedDevices']['device']
+    return client.service.updateUser(userid='dean', associatedDevices={'device': userDevices})
 
 disable_warnings(InsecureRequestWarning)
 username = 'administrator'
