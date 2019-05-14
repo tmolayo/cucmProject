@@ -37,15 +37,19 @@ def updateUserSelfSerivce(userID, selfServiceUserID):
     try:
         return client.service.updateUser(userid=userID, selfService=selfServiceUserID)
     except Exception as error:
-        return error
+        if "Item not valid: The specified " + userID + " was not found" == error:
+            return "Invalid userName"
+        if "Self-Service ID has invalid format. Regular expression used to validate: ^[0-9*]{0,27}$" == error:
+            return "Illegal Self-Service ID"
 
 
-# TODO: Unable to associate more that one device
+# TODO: Unable to associate more than one device
 def associateDevice(userID, device):
     try:
-        return client.service.updateuser(userid=userID, associatedDevices=device)
+        return client.service.updateUser(userid=userID, associatedDevices=device)
     except Exception as error:
         return error
+
 
 
 disable_warnings(InsecureRequestWarning)
@@ -55,3 +59,8 @@ password = 'ciscopsdt'
 # If you're not disabling SSL verification, host should be the FQDN of the server rather than IP
 wsdl = 'file://schema/AXLAPI.wsdl'
 client = getAuthenticationWithServer(username, password, wsdl)
+
+#print(client.service.getUser(userid='user01')['return']['user'])
+associated_devices = [{'device': 'BOTUSER014'}, {'device': 'TCTUSER019'}, {'device': 'CSFUSER002'}]
+associated_devices = {'associatedDevices': [{'device': 'TCTUSER019'}, {'device': 'CSFUSER002'}]}
+print(associateDevice('user01', associated_devices))
