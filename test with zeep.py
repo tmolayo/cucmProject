@@ -12,6 +12,7 @@ from lxml import etree
 import ssl
 
 def getAuthenticationWithServer(username, password,wsdl):
+    disable_warnings(InsecureRequestWarning)
     session = Session()
     session.verify = False
     session.auth = HTTPBasicAuth(username, password)
@@ -20,20 +21,154 @@ def getAuthenticationWithServer(username, password,wsdl):
     ssl._create_default_https_context = ssl._create_unverified_context
     return (Client(wsdl=wsdl, transport=transport, plugins=[history]))
 
+def addUser(client,userId, firstName, lastName, devices):
+    if (devices == None or len(devices) == 0):
+        response = client.service.addUser(
+            user={
+                'firstName': firstName,
+                'lastName': lastName,
+                'userid': userId
+            })
+    else:
+        dictDevices = []
+        for device in devices:
+            dictDevices.append({'device': device})
+        print(dictDevices)
+        response = client.service.addUser(
+            user={
+                'firstName': firstName,
+                'lastName': lastName,
+                'userid': userId,
+                'associatedDevices': dictDevices
+            })
+
+def getUserInfo(userId, attributes=[]):
+    """ Get info about of the user by user id,
+      return None if the user not found, if more then 1 found raise exception"""
+    returnedTagsForApi = {}
+    for attr in attributes:
+        returnedTagsForApi[attr] = ''
+    userJson = client.service \
+        .listUser(searchCriteria={'userid': userId}, returnedTags=returnedTagsForApi)
+    if (not userJson['return'] or not userJson['return']['user'] ):
+        return None
+    if (len(userJson['return']['user']) > 1):
+        raise RuntimeError('found more then one user with the same id, the id => ' + userId)
+    return userJson['return']['user'][0]
+
+def getUserUuid(userId):
+    """ Get uuid about of the user by user id,
+         return None if the user not found, if more then 1 found raise exception"""
+    return getPhoneInfo(userId, attributes=['uuid'])['uuid']
+
+def addPhone(client, name):
+    client.service.addPhone(phone={
+        'name': '%s%s' % ('CSF', name),
+        'product': 'Cisco Unified Client Services Framework',
+        'class': 'Phone',
+        'protocol': 'SIP',
+        'protocolSide': 'User',
+        'devicePoolName': 'Default',
+        'sipProfileName': 'Standard SIP Profile',
+        'commonPhoneConfigName': 'Standard Common Phone Profile',
+        'locationName': 'Hub_None'
+    })
+
+def addPhoneWithLine(client, phoneName, lineId):
+    lineUuid = getLineUuid(lineId)
+    if (not lineUuid):
+        raise ValueError('The line with the id ' + lineUuid + ' is not exist')
+    client.service.addPhone(phone={
+        'name': '%s%s' % ('CSF', phoneName),
+        'product': 'Cisco Unified Client Services Framework',
+        'class': 'Phone',
+        'protocol': 'SIP',
+        'protocolSide': 'User',
+        'devicePoolName': 'Default',
+        'sipProfileName': 'Standard SIP Profile',
+        'commonPhoneConfigName': 'Standard Common Phone Profile',
+        'locationName': 'Hub_None',
+        'lines': {
+            'line': {
+                'index': 1,
+                'dirn': {
+                    'uuid': lineUuid,
+                    'pattern': lineId
+                },
+                'display': 'displayCheck',
+                'label': 'labelCheck'
+
+            }},
+    })
+
+def getPhoneInfo(phoneName, attributes=[]):
+    """ Get info about of the phone by phone name,
+    return None if the phone not found, if more then 1 found raise exception"""
+    returnedTagsForApi = {}
+    for attr in attributes:
+        returnedTagsForApi[attr] = ''
+    phoneJson = client.service\
+        .listPhone(searchCriteria={'name': '%s%s' % ('CSF', phoneName)}, returnedTags=returnedTagsForApi)
+    if (not phoneJson['return'] or not phoneJson['return']['phone']):
+        return None
+    if (len(phoneJson['return']['phone']) > 1):
+        raise RuntimeError('found more then one phone with the same name, the name => ' + phoneName)
+    return phoneJson['return']['phone'][0]
+
+def getPhoneUuid(phoneName):
+    """ Get uuid about of the phone by phone name,
+        return None if the phone not found, if more then 1 found raise exception"""
+    return getPhoneInfo(phoneName, attributes=['uuid'])['uuid']
+
+def updatePhoneLine(phoneName, lineId):
+    """update the line of a phone"""
+    lineUuid = getLineUuid(lineId)
+    if (not lineUuid):
+        raise ValueError('The line with the id ' + lineUuid + ' is not exist')
+    client.service.updatePhone(name= '%s%s' % ('CSF', phoneName), lines={
+        'line': {
+            'index': 1,
+            'dirn': {
+                'uuid': lineUuid,
+                'pattern': lineId
+            },
+            'display': 'displayCheck',
+            'label': 'labelCheck'
+        }})
+
+def addLine(id):
+    """add a line"""
+    return client.service.addLine(line={
+        'pattern': id,
+        'usage':'',
+        'description' : 'description' + id,
+        'alertingName' : 'alertingName' + id,
+        'routePartitionName': 'Global Learned E164 Patterns'})['return']
+
+def getLineInfo(lineId, attributes=[]):
+    """ Get the uuid of the line by line id,
+    return None if the line not found, raise exception if more then one founded"""
+    returnedTagsForApi = {}
+    for attr in attributes:
+        returnedTagsForApi[attr] = ''
+    lineJson = client \
+        .service.listLine(searchCriteria={'pattern': lineId}, returnedTags=returnedTagsForApi)
+    if(not lineJson['return'] or not lineJson['return']['line'] ):
+        return None
+    if (len(lineJson['return']['line']) > 1):
+        raise RuntimeError('found more then one line with the same id, the id => ' + lineId)
+    return lineJson['return']['line'][0]
 
 def getLineUuid(lineId):
-    lineJson = None
-    try:
-        lineJson = client.service.getLine(pattern=lineId, returnedTags={'_uuid': ''})
-    except Exception as error:
-        if (error.fault.faultstring == "Item not valid: The specified Line was not found"):
-            return None
-        else:
-            raise (error)
-    return lineJson['return']['line']['_uuid']
+    return getLineInfo(lineId, attributes=['uuid'])['uuid']
+
+# ToDo: function that get value from json and raise exception if the json not in the right convention
+def getFromJson(json, arrOfAttributes):
+    pass
 
 
 def updateUserSelfSerivce(userID, selfServiceUserID):
+
     try:
         return client.service.updateUser(userid=userID, selfService=selfServiceUserID)
     except Exception as error:
@@ -51,6 +186,13 @@ def associateDevice(userID, device):
         return error
 
 
+def associatePrimateExtention(userId, device):
+    associateDevice(userId, device)
+    for assignedDevices in client.service.getUser(userid=userId)['return']['user']['lineAppearanceAssociationForPresences']['lineAppearanceAssociationForPresence']:
+        if assignedDevices['laapDeviceName'] == device:
+            return client.service.updateUser(userid=userId,
+                                             primaryExtension={'pattern': assignedDevices['laapDirectory']})
+
 
 disable_warnings(InsecureRequestWarning)
 username = 'administrator'
@@ -60,7 +202,5 @@ password = 'ciscopsdt'
 wsdl = 'file://schema/AXLAPI.wsdl'
 client = getAuthenticationWithServer(username, password, wsdl)
 
-#print(client.service.getUser(userid='user01')['return']['user'])
-associated_devices = [{'device': 'BOTUSER014'}, {'device': 'TCTUSER019'}, {'device': 'CSFUSER002'}]
-associated_devices = {'associatedDevices': [{'device': 'TCTUSER019'}, {'device': 'CSFUSER002'}]}
-print(associateDevice('user01', associated_devices))
+print(client.service.getUser(userid='user02')['lineAppearanceAssociationForPresences'])
+client.service.updateUser(userid='user02', primaryExtension={'pattern': 1111})
