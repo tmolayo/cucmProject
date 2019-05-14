@@ -1,4 +1,4 @@
-from pip._vendor.pyparsing import unicode_set
+#from pip._vendor.pyparsing import unicode_set
 from zeep import Client
 from zeep.cache import SqliteCache
 from zeep.transports import Transport
@@ -162,22 +162,30 @@ def getLineInfo(lineId, attributes=[]):
 def getLineUuid(lineId):
     return getLineInfo(lineId, attributes=['uuid'])['uuid']
 
-"""not necessery!!!"""
-# def isLineExist(lindId):
-#     return (getLineUuid(lindId) != None)
-
 # ToDo: function that get value from json and raise exception if the json not in the right convention
 def getFromJson(json, arrOfAttributes):
     pass
 
 
+def updateUserSelfSerivce(userID, selfServiceUserID):
+    try:
+        return client.service.updateUser(userid=userID, selfService=selfServiceUserID)
+    except Exception as error:
+        return error
+
+
+# TODO: Unable to associate more that one device
+def associateDevice(userID, device):
+    try:
+        return client.service.updateuser(userid=userID, associatedDevices=device)
+    except Exception as error:
+        return error
+
+
+disable_warnings(InsecureRequestWarning)
 username = 'administrator'
 password = 'ciscopsdt'
 
 # If you're not disabling SSL verification, host should be the FQDN of the server rather than IP
 wsdl = 'file://schema/AXLAPI.wsdl'
 client = getAuthenticationWithServer(username, password, wsdl)
-
-print(getUserUuid('dean'))
-print(getPhoneUuid('dean'))
-
