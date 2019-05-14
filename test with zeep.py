@@ -145,7 +145,7 @@ def updatePhoneLine(phoneName, lineId):
 
 def addLine(id):
     """add a line"""
-    return  client.service.addLine(line={
+    return client.service.addLine(line={
         'pattern': id,
         'usage':'',
         'description' : 'description' + id,
@@ -172,9 +172,33 @@ def getLineUuid(lineId):
 def updateUserSelfSerivce(userId, selfServiceUserID):
     return client.service.updateUser(userid=userId, selfService=selfServiceUserID)
 
+
+# ToDo: function that get value from json and raise exception if the json not in the right convention
+def getFromJson(json, arrOfAttributes):
+    pass
+
+
+def updateUserSelfSerivce(userID, selfServiceUserID):
+
+    try:
+        return client.service.updateUser(userid=userID, selfService=selfServiceUserID)
+    except Exception as error:
+        if "Item not valid: The specified " + userID + " was not found" == error:
+            return "Invalid userName"
+        if "Self-Service ID has invalid format. Regular expression used to validate: ^[0-9*]{0,27}$" == error:
+            return "Illegal Self-Service ID"
+
 def addAssociateDeviceToUser(userId, device):
     userDevices = [device] + getUserInfo(userId)['associatedDevices']['device']
     return client.service.updateUser(userid='dean', associatedDevices={'device': userDevices})
+
+def associatePrimateExtention(userId, device):
+    associateDevice(userId, device)
+    for assignedDevices in client.service.getUser(userid=userId)['return']['user']['lineAppearanceAssociationForPresences']['lineAppearanceAssociationForPresence']:
+        if assignedDevices['laapDeviceName'] == device:
+            return client.service.updateUser(userid=userId,
+                                             primaryExtension={'pattern': assignedDevices['laapDirectory']})
+
 
 disable_warnings(InsecureRequestWarning)
 username = 'administrator'
@@ -183,3 +207,4 @@ password = 'ciscopsdt'
 # If you're not disabling SSL verification, host should be the FQDN of the server rather than IP
 wsdl = 'file://schema/AXLAPI.wsdl'
 client = getAuthenticationWithServer(username, password, wsdl)
+
