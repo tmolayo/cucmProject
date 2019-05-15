@@ -21,13 +21,14 @@ def getAuthenticationWithServer(username, password,wsdl):
     ssl._create_default_https_context = ssl._create_unverified_context
     return (Client(wsdl=wsdl, transport=transport, plugins=[history]))
 
-def addUser(client,userId, firstName, lastName, devices):
+def addUser(userId, firstName, lastName, devices=None):
     if (devices == None or len(devices) == 0):
         response = client.service.addUser(
             user={
                 'firstName': firstName,
                 'lastName': lastName,
-                'userid': userId
+                'userid': userId,
+                'presenceGroupName': 'Standard Presence group'
             })
     else:
         dictDevices = []
@@ -81,7 +82,7 @@ def addPhone(client, name):
         'locationName': 'Hub_None'
     })
 
-def addPhoneWithLine(client, phoneName, lineId):
+def addPhoneWithLine(phoneName, lineId):
     lineUuid = getLineUuid(lineId)
     if (not lineUuid):
         raise ValueError('The line with the id ' + lineUuid + ' is not exist')
@@ -150,7 +151,7 @@ def addLine(id):
         'usage':'',
         'description' : 'description' + id,
         'alertingName' : 'alertingName' + id,
-        'routePartitionName': 'Global Learned E164 Patterns'})['return']
+        'routePartitionName': None})['return']
 
 def searchForLine(lineId, attributes=['uuid']):
     """ search for user, if he not found return None else
@@ -172,33 +173,30 @@ def getLineUuid(lineId):
 def updateUserSelfSerivce(userId, selfServiceUserID):
     return client.service.updateUser(userid=userId, selfService=selfServiceUserID)
 
-
-# ToDo: function that get value from json and raise exception if the json not in the right convention
-def getFromJson(json, arrOfAttributes):
-    pass
-
-
 def updateUserSelfSerivce(userID, selfServiceUserID):
+    return client.service.updateUser(userid=userID, selfService=selfServiceUserID)
 
-    try:
-        return client.service.updateUser(userid=userID, selfService=selfServiceUserID)
-    except Exception as error:
-        if "Item not valid: The specified " + userID + " was not found" == error:
-            return "Invalid userName"
-        if "Self-Service ID has invalid format. Regular expression used to validate: ^[0-9*]{0,27}$" == error:
-            return "Illegal Self-Service ID"
+def addAssociateDeviceToUser(userId, newDevice):
+    oldDevices = getUserInfo(userId)['associatedDevices']
+    userDevices = [newDevice]
+    if(oldDevices and oldDevices['device']):
+        userDevices += oldDevices['device']
+    return client.service.updateUser(userid=userId, associatedDevices={'device': userDevices})
 
-def addAssociateDeviceToUser(userId, device):
-    userDevices = [device] + getUserInfo(userId)['associatedDevices']['device']
-    return client.service.updateUser(userid='dean', associatedDevices={'device': userDevices})
+def updatePrimaryExtentionToUser(userId,lineId):
+    return client.service.updateUser(userid=userId,
+                                     primaryExtension={'pattern': lineId})
 
-def associatePrimateExtention(userId, device):
-    associateDevice(userId, device)
-    for assignedDevices in client.service.getUser(userid=userId)['return']['user']['lineAppearanceAssociationForPresences']['lineAppearanceAssociationForPresence']:
-        if assignedDevices['laapDeviceName'] == device:
-            return client.service.updateUser(userid=userId,
-                                             primaryExtension={'pattern': assignedDevices['laapDirectory']})
-
+def checkPart1():
+    line = '1037'
+    userName = 'deanTest7'
+    phoneName = 'deanTest107'
+    addUser(userName, 'dean', 'bachar')
+    updateUserSelfSerivce(userName, line)
+    addLine(line)
+    addPhoneWithLine(phoneName, line)
+    addAssociateDeviceToUser(userName, 'CSF' + phoneName)
+    updatePrimaryExtentionToUser(userName, line)
 
 disable_warnings(InsecureRequestWarning)
 username = 'administrator'
@@ -207,4 +205,5 @@ password = 'ciscopsdt'
 # If you're not disabling SSL verification, host should be the FQDN of the server rather than IP
 wsdl = 'file://schema/AXLAPI.wsdl'
 client = getAuthenticationWithServer(username, password, wsdl)
+
 
