@@ -3,3 +3,4 @@ schema/AXLAPI.wsdl
 schema/AXLEnums.xsd
 schema/AXLSoap.xsd
 
+__pycache__/templates.cpython-37.pyc
