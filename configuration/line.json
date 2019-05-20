@@ -1,9 +1,7 @@
 {
-  "line": {
-    "pattern": "",
-    "usage": "",
-    "description": "",
-    "alertingName": "",
-    "routePartitionName": "Global Learned E164 Patterns"
-  }
+  "pattern": "{{ id }}",
+  "usage": "",
+  "description": "description {{ id }}",
+  "alertingName": "alertingName {{ id }}",
+  "routePartitionName": "Global Learned E164 Patterns"
 }

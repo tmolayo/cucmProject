@@ -1,25 +1,23 @@
 {
-  "phoneWithLine": {
-    "phone": {
-      "name": "",
-      "product": "Cisco Unified Client Services Framework",
-      "class": "Phone",
-      "protocol": "SIP",
-      "protocolSide": "User",
-      "devicePoolName": "Default",
-      "sipProfileName": "Standard SIP Profile",
-      "commonPhoneConfigName": "Standard Common Phone Profile",
-      "locationName": "Hub_None",
-      "lines": {
-        "line": {
-          "index": 1,
-          "dirn": {
-            "uuid": "",
-            "pattern": ""
-          },
-          "display": "displayCheck",
-          "label": "labelCheck"
-        }
+  "phone": {
+    "name": "CSF{{ name }}",
+    "product": "Cisco Unified Client Services Framework",
+    "class": "Phone",
+    "protocol": "SIP",
+    "protocolSide": "User",
+    "devicePoolName": "Default",
+    "sipProfileName": "Standard SIP Profile",
+    "commonPhoneConfigName": "Standard Common Phone Profile",
+    "locationName": "Hub_None",
+    "lines": {
+      "line": {
+        "index": 1,
+        "dirn": {
+          "uuid": "{{ uuid }}",
+          "pattern": "{{ id }}"
+        },
+        "display": "displayCheck",
+        "label": "labelCheck"
       }
     }
   }
