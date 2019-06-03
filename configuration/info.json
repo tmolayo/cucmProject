@@ -1,0 +1,9 @@
+{
+  "prod": {
+    "credentials": {
+      "username": "sev_UCPortal",
+      "password": "txyrydh440!"
+    },
+    "DC": "dcsvc01kir"
+  }
+}
