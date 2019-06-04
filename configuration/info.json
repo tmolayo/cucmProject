@@ -1,9 +1,0 @@
-{
-  "prod": {
-    "credentials": {
-      "username": "sev_UCPortal",
-      "password": "password"
-    },
-    "DC": "DCName"
-  }
-}

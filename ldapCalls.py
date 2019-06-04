@@ -1,29 +1,30 @@
 from ldap3 import Connection, Server, ALL, MODIFY_REPLACE
-import json
-
-with open('./configuration/info.json', 'r') as file:
-    info = json.load(file)
-
-server = Server(info['prod']['DC'], get_info=ALL)
-connection = Connection(server, user=info['prod']['credentials']['username'],
-                        password=info['prod']['credentials']['password'])
 
 
-def getUserIPPhone(userName):
-    connection.bind()
-    connection.search(search_base='search base', search_filter='(samAccountName=' + userName + ')',
-                      attributes=['cn', 'samAccountName', 'ipPhone'])
-    return connection.response[0].get('attributes').get('ipPhone')
-    connection.unbind()
-
-def getUserDN(userName):
-    connection.search(search_base='search base', search_filter='(samAccountName=' + userName + ')',
-                      attributes=['cn', 'samAccountName', 'ipPhone'])
-    return connection.response[0].get('dn')
+class LdapConnection:
+    def __init__(self, ldapServer, username, password):
+        server = Server(ldapServer, get_info=ALL)
+        self.connection = Connection(server, user=username, password=password)
 
 
-def setUserIPPhone(userName, ipPhone):
-    connection.bind()
-    userDN = getUserDN(userName)
-    return connection.modify(dn=userDN, changes={'ipPhone': [(MODIFY_REPLACE, [str(ipPhone)])]})
-    connection.unbind()
+    def getUserIPPhone(self, userName, connection):
+        connection.bind()
+        connection.search(search_base='search base', search_filter='(samAccountName=' + userName + ')',
+                          attributes=['cn', 'samAccountName', 'ipPhone'])
+        ipPhone = connection.response[0].get('attributes').get('ipPhone')
+        connection.unbind()
+        return ipPhone
+
+
+    def getUserDN(self, userName, connection):
+        connection.search(search_base='search base', search_filter='(samAccountName=' + userName + ')',
+                          attributes=['cn', 'samAccountName', 'ipPhone'])
+        return connection.response[0].get('dn')
+
+
+    def setUserIPPhone(self, userName, ipPhone, connection):
+        connection.bind()
+        userDN = self.getUserDN(userName, connection)
+        isModified = connection.modify(dn=userDN, changes={'ipPhone': [(MODIFY_REPLACE, [str(ipPhone)])]})
+        connection.unbind()
+        return isModified
