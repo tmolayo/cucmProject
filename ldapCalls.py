@@ -2,29 +2,31 @@ from ldap3 import Connection, Server, ALL, MODIFY_REPLACE
 
 
 class LdapConnection:
-    def __init__(self, ldapServer, username, password):
-        server = Server(ldapServer, get_info=ALL)
+    def __init__(self, ldap_server, username, password):
+        server = Server(ldap_server, get_info=ALL)
         self.connection = Connection(server, user=username, password=password)
+        self.connection.bind()
 
-
-    def getUserIPPhone(self, userName, connection):
+    @staticmethod
+    def get_user_ipphone(user_name, connection):
         connection.bind()
-        connection.search(search_base='search base', search_filter='(samAccountName=' + userName + ')',
+        connection.search(search_base='search base', search_filter='(samAccountName=' + user_name + ')',
                           attributes=['cn', 'samAccountName', 'ipPhone'])
-        ipPhone = connection.response[0].get('attributes').get('ipPhone')
-        connection.unbind()
-        return ipPhone
+        ip_phone = connection.response[0].get('attributes').get('ipPhone')
+        return ip_phone
 
-
-    def getUserDN(self, userName, connection):
-        connection.search(search_base='search base', search_filter='(samAccountName=' + userName + ')',
+    @staticmethod
+    def get_user_dn(user_name, connection):
+        connection.search(search_base='search base', search_filter='(samAccountName=' + user_name + ')',
                           attributes=['cn', 'samAccountName', 'ipPhone'])
         return connection.response[0].get('dn')
 
-
-    def setUserIPPhone(self, userName, ipPhone, connection):
+    def set_user_ip_phone(self, user_name, ip_phone, connection):
         connection.bind()
-        userDN = self.getUserDN(userName, connection)
-        isModified = connection.modify(dn=userDN, changes={'ipPhone': [(MODIFY_REPLACE, [str(ipPhone)])]})
-        connection.unbind()
-        return isModified
+        user_dn = self.getUserDN(user_name, connection)
+        is_modified = connection.modify(dn=user_dn, changes={'ipPhone': [(MODIFY_REPLACE, [str(ip_phone)])]})
+        return is_modified
+
+    def end_connection(self):
+        self.connection.unbind()
+        del self.connection
